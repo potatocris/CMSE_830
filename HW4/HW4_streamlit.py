@@ -46,7 +46,7 @@ expand2.write(
 )
 
 # Load the dataset
-df = pd.read_csv("Loan_Modelling.csv", index_col=0)
+df = pd.read_csv('Loan_Modelling.csv', index_col=0)
 
 # Create layout columns
 col1, col2 = st.columns([1, 3])
@@ -113,7 +113,7 @@ sec2.write("### Box Plot")
 selected2 = sec2.selectbox(
     "Which features are you interested in?", numeric_columns, key="se2"
 )
-fig = sns.boxplot(data=df, x=selected2, hue="Personal_Loan", orient="h")
+fig = sns.boxplot(data=df, x=selected2, orient="h")
 sec2.pyplot()
 
 # Tab 3: Pair Plot
