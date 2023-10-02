@@ -113,7 +113,7 @@ sec2.write("### Box Plot")
 selected2 = sec2.selectbox(
     "Which features are you interested in?", numeric_columns, key="se2"
 )
-fig = sns.boxplot(data=df, x=selected2, hue="Personal_Loan", orient="h")
+fig = sns.boxplot(data=df, x=selected2, orient="h")
 sec2.pyplot()
 
 # Tab 3: Pair Plot
