@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 st.set_option('deprecation.showPyplotGlobalUse', False)
 st.set_page_config(layout="wide")
 
+# setting the layout for the seaborn plot
+sns.set(style="darkgrid")
+
 # Set Streamlit app title
 st.title("Loan Modelling Data Exploration")
 
@@ -47,7 +50,8 @@ expand2.write(
 )
 
 # Load the dataset
-df = pd.read_csv('HW4/Loan_Modelling.csv', index_col=0)
+file = r'HW4/Loan_Modelling.csv'
+df = pd.read_csv(file, index_col=0)
 
 # Create layout columns
 col1, col2 = st.columns([1, 3])
