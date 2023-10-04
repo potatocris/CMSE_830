@@ -4,7 +4,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 st.set_option('deprecation.showPyplotGlobalUse', False)
-st.set_page_config(layout="wide")
+# st.set_page_config(layout="wide")
 
 # setting the layout for the seaborn plot
 sns.set(style="darkgrid")
