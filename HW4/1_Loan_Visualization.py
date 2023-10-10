@@ -145,12 +145,10 @@ df['County']=df['ZIPCode'].map(dict_zip)
 df.drop("ZIPCode", axis=1, inplace=True)
 
 df['Regions'] = df['County'].map(counties)
-st.dataframe(df["Regions"].value_counts() , width=300)
 
 # Create Agebin by binning age
 df['Agebin'] = pd.cut(df['Age'], bins = [0, 30, 40, 50, 60, 100], 
                            labels = ['18-30', '31-40', '41-50', '51-60', '60-100'])
-st.dataframe(df["Agebin"].value_counts() , width=300)
 
 # Create Income Class by binning Income
 df["Income_Group"] = pd.cut(
@@ -158,7 +156,6 @@ df["Income_Group"] = pd.cut(
     bins=[0, 50, 140, 224],
     labels=["Lower", "Middle", "Upper"],
 )
-st.dataframe(df["Income_Group"].value_counts() , width=300)
 
 # Convert selected columns to categorical variables
 cat_columns = [
@@ -177,21 +174,42 @@ df[cat_columns] = df[cat_columns].astype("category")
 # --------------------------------
 
 # Summary statistics
-st.subheader("Summary Statistics", divider="red")
+# --------------------------------
+st.subheader("Summary Statistics")
 st.write(df.describe().T)
 
-# Create layout columns
-col1, col2 = st.columns(2)
+# Features Creation
+# ---------------------------------
+geo_cont = st.container()
+with geo_cont:
+    # Create layout columns
+    col1, col2 = st.columns(2)
 
-# Display the Counties created
-with col1:
-    st.write("#### Converted Zip Codes to County")
-    st.dataframe(df["County"].value_counts() , width=300)
+    # Display the Counties created
+    with col1:
+        with st.expander("#### Converted `Zip Codes` to `County`"):
+            st.dataframe(df["County"].value_counts() , width=300)
+        
 
-# Display the Regions created
-with col2:
-    st.write("#### Created Regions from Counties")
-    st.dataframe(df["Regions"].value_counts() , width=300)
+    # Display the Regions created
+    with col2:
+        with st.expander("#### Created `Regions` from `Counties`"):
+            st.dataframe(df["Regions"].value_counts() , width=300)
+
+agebin_cont = st.container()
+with agebin_cont:
+    # Create more layout columns
+    col3, col4 = st.columns(2)
+
+    # Display the Agebins created
+    with col3:
+        st.write("#### Created `Age Bin` from `Age`")
+        st.dataframe(df["Agebin"].value_counts() , width=300)
+
+    # Display the Income Group created
+    with col4:
+        st.write("#### Created `Income Group` from `Income`")
+        st.dataframe(df["Income_Group"].value_counts() , width=300)
 
 
 # Button that allows the user to see the entire table
