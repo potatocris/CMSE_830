@@ -143,7 +143,6 @@ counties = {
 # Add County to the dataset then drop Zipcode
 df['County']=df['ZIPCode'].map(dict_zip) 
 df.drop("ZIPCode", axis=1, inplace=True)
-st.dataframe(df["County"].value_counts() , width=300)
 
 df['Regions'] = df['County'].map(counties)
 st.dataframe(df["Regions"].value_counts() , width=300)
@@ -177,87 +176,85 @@ df[cat_columns] = df[cat_columns].astype("category")
 # Designing the Visuals on the App
 # --------------------------------
 
-# Partitioning the Web App to accommodate the Visualization of the Dataset and ML algorithm
-st.sidebar.write("### This Application is divided into two sections")
+# Summary statistics
+st.subheader("Summary Statistics", divider="red")
+st.write(df.describe().T)
 
-main_opt = st.sidebar.radio('What do you want to do: ', 
-                            ["Data Visualization", "Run Machine Learning Algorithms"])
+# Create layout columns
+col1, col2 = st.columns(2)
 
-if(main_opt == "Data Visualization"):
+# Display the Counties created
+with col1:
+    st.write("#### Converted Zip Codes to County")
+    st.dataframe(df["County"].value_counts() , width=300)
 
-    # Create layout columns
-    col1, col2 = st.columns([1, 3])
+# Display the Regions created
+with col2:
+    st.write("#### Created Regions from Counties")
+    st.dataframe(df["Regions"].value_counts() , width=300)
+
+
+# Button that allows the user to see the entire table
+check_data = st.toggle('Show the Dataset')
+if check_data:
+    st.dataframe(df)
     
-    # Display unique value counts for each column
-    col1.subheader("Value Count", divider="blue")
-    col1.write(f"Dataset shape: {df.shape}")
-    unique_counts = df.nunique().sort_values(ascending=False)
-    col1.write(unique_counts)
+st.divider()
 
-    
-    # Summary statistics
-    col2.subheader("Summary Statistics", divider="red")
-    col2.write(df.describe().T)
+st.write("### Have fun with data exploration!")
 
-    # Button that allows the user to see the entire table
-    check_data = st.toggle('Show the Dataset')
-    if check_data:
-        st.dataframe(df)
-    
-    st.divider()
+# Create tabs for different visualizations
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Variable Distribution", 
+                                        "Boxplot", 
+                                        "Pair Plot", 
+                                        "Bar Plot", 
+                                        "Altair Interactive Plot"
+                                        ])
 
-    st.write("### Have fun with data exploration!")
-
-    # Create tabs for different visualizations
-    sec1, sec2, sec3, sec4, sec5 = st.tabs(["Variable Distribution", 
-                                            "Boxplot", 
-                                            "Pair Plot", 
-                                            "Bar Plot", 
-                                            "Altair Interactive Plot"
-                                            ])
-
-    # Tab 1: Distribution Plot
+# Tab 1: Distribution Plot
+with tab1:
     numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
     non_numeric_columns = df.select_dtypes(exclude=np.number).columns.tolist()
     non_numeric_columns.remove("County")
+    rd1 = tab1.radio("Select the feature you want to display", numeric_columns, horizontal= True, key= "rad1")
+    fig = sns.histplot(data=df, x=rd1, hue="Personal_Loan")
+    sns.move_legend(fig, "upper left", bbox_to_anchor=(1, 1))
+    tab1.pyplot()
 
-    selected = sec1.radio("Select the feature you want to display", numeric_columns, horizontal= True, key= "rad1")
-    fig = sns.histplot(data=df, x=selected, hue="Personal_Loan")
-    sec1.pyplot()
+# Tab 2: Box Plot
+with tab2:
+    rd2 = tab2.radio("Select the feature you want to display", numeric_columns, horizontal= True, key= "rad2")
+    fig = sns.boxplot(data=df, x=rd2, orient="h")
+    tab2.pyplot()
 
-    # Tab 2: Box Plot
-    selected2 = sec2.radio("Select the feature you want to display", numeric_columns, horizontal= True, key= "rad2")
+# Tab 3: Pair Plot
+with tab3:
+    multi1 = tab3.multiselect(
+        "Which features are you interested in?",
+        [d for d in numeric_columns if d != "Personal_Loan"],
+        ["Age", "Income", "Mortgage"],
+        key="se3"
+        )
+    # Incase the user makes a mistake by deleting the columns by mistake
+    if (len(multi1) == 0):
+        st.write("You cannot leave the field empty, Please select one or more columns!")
+    else:
+        sns.pairplot(
+        df[["Personal_Loan"] + multi1],
+        hue="Personal_Loan",
+        palette=["blue", "green"],
+        markers=["o", "s"]
+        )
+        tab3.pyplot()
 
-    fig = sns.boxplot(data=df, x=selected2, orient="h")
-    sec2.pyplot()
-
-    # # Tab 3: Pair Plot
-    # selected3 = sec3.multiselect(
-    #     "Which features are you interested in?",
-    #     [d for d in numeric_columns if d != "Personal_Loan"],
-    #     ["Age", "Income", "Mortgage"],
-    #     key="se3"
-    #     )
-    # # Incase the user makes a mistake by deleting the columns by mistake
-    # if (len(selected3) == 0):
-    #     st.write("You cannot leave the field empty, Please select one or more columns!")
-    # else:
-    #     sns.pairplot(
-    #     df[["Personal_Loan"] + selected3],
-    #     hue="Personal_Loan",
-    #     palette=["blue", "green"],
-    #     markers=["o", "s"]
-    #     )
-    #     sec3.pyplot()
-
-    # Tab 4: Bar Plot
-    
-    selected4 = sec4.selectbox(
-        "Which feature are you interested in?", non_numeric_columns, key="se4"
+# Tab 4: Bar Plot
+with tab4:
+    sb1 = tab4.selectbox(
+        "Which feature are you interested in?", non_numeric_columns, key="sel1"
         )
     fig, ax = plt.subplots()
-    sns.countplot(data=df, x=selected4, ax=ax)
-    total = len(df[selected4])
+    sns.countplot(data=df, x=sb1, ax=ax)
+    total = len(df[sb1])
     for p in ax.patches:
         height = p.get_height()
         ax.text(
@@ -267,14 +264,15 @@ if(main_opt == "Data Visualization"):
             ha="center",
             size=10
             )
-    sec4.pyplot()
+    tab4.pyplot()
 
-    # Tab 5: Altair Plot
+# Tab 5: Altair Plot
+with tab5:
     opt1, opt2, opt3 = st.columns(3)
 
-    x_sb = opt1.selectbox('x axis: ', numeric_columns)
-    y_sb = opt2.selectbox('y axis: ', numeric_columns)
-    color = opt3.selectbox('hue: ', non_numeric_columns)
+    x_sb = opt1.selectbox('x axis: ', numeric_columns, key="sel2")
+    y_sb = opt2.selectbox('y axis: ', numeric_columns, key= "sel3")
+    color = opt3.selectbox('hue: ', non_numeric_columns, key= "sel4")
 
     chart = alt.Chart(df).mark_point().encode(
         alt.X(x_sb, title= f'{x_sb}'),
@@ -283,132 +281,150 @@ if(main_opt == "Data Visualization"):
             width=700,
             height=550
             ).interactive()
-    
-    sec5.altair_chart(chart)
 
-    
-
-    # # Plot correlation heatmap
-    # st.write("#### Correlation Heatmap")
-    # corr_heatmap = sns.heatmap(
-    #     data=df.corr(numeric_only=True), 
-    #     linewidths=0.5, 
-    #     annot=True, 
-    #     fmt=".2f"
-    #     )
-    # st.pyplot()
+    tab5.altair_chart(chart)
 
 
-    # sns.distplot( df[df['Personal_Loan'] == 0]['Income'], color = 'g')
-    # sns.distplot( df[df['Personal_Loan'] == 1]['Income'], color = 'r')
-    # st.pyplot()
 
-    # ax = sns.stripplot(x='Family', y='Income', hue='Personal_Loan', data=df,dodge= True)
-    # sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-    # st.pyplot()
-
-    from vega_datasets import data
-
-    # We use @st.cache_data to keep the dataset in cache
-    @st.cache_data
-    def get_data():
-        source = data.stocks()
-        source = source[source.date.gt("2004-01-01")]
-        return source
-
-    source = get_data()
-
-    # Define the base time-series chart.
-    def get_chart(data):
-        hover = alt.selection_single(
-            fields=["date"],
-            nearest=True,
-            on="mouseover",
-            empty="none",
+# Plot correlation heatmap
+heat_cont = st.container()
+with heat_cont:
+    st.write("#### Correlation Heatmap")
+    corr_heatmap = sns.heatmap(
+        data=df.corr(numeric_only=True), 
+        linewidths=0.5, 
+        annot=True, 
+        fmt=".2f"
         )
+    st.pyplot()
+    with st.expander("See explanation"):
+        st.write("""
+            The chart above shows some numbers I picked for you.
+            I rolled actual dice for these, so they're *guaranteed* to
+            be random.
+        """)
 
-        lines = (
-            alt.Chart(data, title="Evolution of stock prices")
-            .mark_line()
-            .encode(
-                x="date",
-                y="price",
-                color="symbol",
-            )
-        )
+# Plot Income distribution
+income_cont = st.container()
+with income_cont:
+    st.write("#### Income Distribution")
+    sns.distplot( df[df['Personal_Loan'] == 0]['Income'], color = 'g')
+    sns.distplot( df[df['Personal_Loan'] == 1]['Income'], color = 'r')
+    st.pyplot()
+    with st.expander("See explanation"):
+        st.write("""
+            The chart above shows some numbers I picked for you.
+            I rolled actual dice for these, so they're *guaranteed* to
+            be random.
+        """)
 
-        # Draw points on the line, and highlight based on selection
-        points = lines.transform_filter(hover).mark_circle(size=65)
+# Plot Family stripplot 
+family_cont = st.container()
+with family_cont:
+    st.write("#### Income/Family Stripplot")
+    ax = sns.stripplot(x='Family', y='Income', hue='Personal_Loan', data=df,dodge= True)
+    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+    st.pyplot()
+    with st.expander("See explanation"):
+        st.write("""
+            The chart above shows some numbers I picked for you.
+            I rolled actual dice for these, so they're *guaranteed* to
+            be random.
+        """)
 
-        # Draw a rule at the location of the selection
-        tooltips = (
-            alt.Chart(data)
-            .mark_rule()
-            .encode(
-                x="yearmonthdate(date)",
-                y="price",
-                opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
-                tooltip=[
-                    alt.Tooltip("date", title="Date"),
-                    alt.Tooltip("price", title="Price (USD)"),
-                ],
-            )
-            .add_selection(hover)
-        )
-        return (lines + points + tooltips).interactive()
+# from vega_datasets import data
 
-    chart = get_chart(source)
+# # We use @st.cache_data to keep the dataset in cache
+# @st.cache_data
+# def get_data():
+#     source = data.stocks()
+#     source = source[source.date.gt("2004-01-01")]
+#     return source
 
-    # Add annotations
-    ANNOTATIONS = [
-        ("Mar 01, 2008", "Pretty good day for GOOG"),
-        ("Dec 01, 2007", "Something's going wrong for GOOG & AAPL"),
-        ("Nov 01, 2008", "Market starts again thanks to..."),
-        ("Dec 01, 2009", "Small crash for GOOG after..."),
-    ]
-    annotations_df = pd.DataFrame(ANNOTATIONS, columns=["date", "event"])
-    annotations_df.date = pd.to_datetime(annotations_df.date)
-    annotations_df["y"] = 10
+# source = get_data()
 
-    annotation_layer = (
-        alt.Chart(annotations_df)
-        .mark_text(size=20, text="⬇", dx=-8, dy=-10, align="left")
-        .encode(
-            x="date:T",
-            y=alt.Y("y:Q"),
-            tooltip=["event"],
-        )
-        .interactive()
-    )
+# # Define the base time-series chart.
+# def get_chart(data):
+#     hover = alt.selection_single(
+#         fields=["date"],
+#         nearest=True,
+#         on="mouseover",
+#         empty="none",
+#     )
 
-    st.altair_chart((chart + annotation_layer).interactive(),
-    use_container_width=True)
+#     lines = (
+#         alt.Chart(data, title="Evolution of stock prices")
+#         .mark_line()
+#         .encode(
+#             x="date",
+#             y="price",
+#             color="symbol",
+#         )
+#     )
+
+#     # Draw points on the line, and highlight based on selection
+#     points = lines.transform_filter(hover).mark_circle(size=65)
+
+#     # Draw a rule at the location of the selection
+#     tooltips = (
+#         alt.Chart(data)
+#         .mark_rule()
+#         .encode(
+#             x="yearmonthdate(date)",
+#             y="price",
+#             opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
+#             tooltip=[
+#                 alt.Tooltip("date", title="Date"),
+#                 alt.Tooltip("price", title="Price (USD)"),
+#             ],
+#         )
+#         .add_selection(hover)
+#     )
+#     return (lines + points + tooltips).interactive()
+
+# chart = get_chart(source)
+
+# # Add annotations
+# ANNOTATIONS = [
+#     ("Mar 01, 2008", "Pretty good day for GOOG"),
+#     ("Dec 01, 2007", "Something's going wrong for GOOG & AAPL"),
+#     ("Nov 01, 2008", "Market starts again thanks to..."),
+#     ("Dec 01, 2009", "Small crash for GOOG after..."),
+# ]
+# annotations_df = pd.DataFrame(ANNOTATIONS, columns=["date", "event"])
+# annotations_df.date = pd.to_datetime(annotations_df.date)
+# annotations_df["y"] = 10
+
+# annotation_layer = (
+#     alt.Chart(annotations_df)
+#     .mark_text(size=20, text="⬇", dx=-8, dy=-10, align="left")
+#     .encode(
+#         x="date:T",
+#         y=alt.Y("y:Q"),
+#         tooltip=["event"],
+#     )
+#     .interactive()
+# )
+
+# st.altair_chart((chart + annotation_layer).interactive(),
+# use_container_width=True)
+
+
+# map_data = pd.DataFrame(
+# np.random.randn(1000, 2) / [50, 50] + [37.76, -122.4],
+# columns=['lat', 'lon'])
+
+# st.map(map_data)
+
+
+age = st.slider('How old are you?', 0, 130, 25)
+st.write("I'm ", age, 'years old')
+
+values = st.slider('Select a range of values', 0.0, 100.0, (25.0, 75.0))
+st.write('Values:', values)
 
 
 
 
 
-
-
-    map_data = pd.DataFrame(
-    np.random.randn(1000, 2) / [50, 50] + [37.76, -122.4],
-    columns=['lat', 'lon'])
-
-    st.map(map_data)
-
-    
-    age = st.slider('How old are you?', 0, 130, 25)
-    st.write("I'm ", age, 'years old')
-
-    values = st.slider('Select a range of values', 0.0, 100.0, (25.0, 75.0))
-    st.write('Values:', values)
-
-
-
-
-
-    data_load_state.text('Loading data...done!')
-
-
-else:
-    st.write("# Coming Soon! 😊")
+data_load_state.text('Loading data...done!')
