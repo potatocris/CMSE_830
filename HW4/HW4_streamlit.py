@@ -1,6 +1,7 @@
 # Libraries to help with reading and manipulating data
 import pandas as pd
 import numpy as np
+import zipcodes as zcode # to get zipcodes
 
 # Libraries to help with data visualization
 import seaborn as sns
@@ -16,22 +17,15 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 # setting the layout for the seaborn plot
 sns.set(style="darkgrid")
 
-# I want help a bank identify customers likely to accept personal loan offers, 
-# and ultimately drive growth and profitability
+# I want help a bank identify customers likely to accept personal loan offers, and ultimately drive growth and profitability
 
 # Load the dataset
 file = r'Loan_Modelling.csv'
-df = pd.read_csv(file, index_col="ID")
+loan = pd.read_csv(file, index_col="ID")
+df = loan.copy()
 
 # Set Streamlit app title
 st.title("Enhancing AllLife Bank's Personal Loan Marketing Strategy 🏦")
-
-# AllLife Bank has a growing customer base. Majority of these customers are liability customers (depositors) with varying size of deposits. 
-# The number of customers who are also borrowers (asset customers) is quite small, and the bank is interested in expanding this base rapidly 
-# to bring in more loan business and in the process, earn more through the interest on loans. In particular, the management wants to explore ways 
-# of converting its liability customers to personal loan customers (while retaining them as depositors).
-# A campaign that the bank ran last year for liability customers showed a healthy conversion rate of over 9% success. 
-# This has encouraged the retail marketing department to devise campaigns with better target marketing to increase the success ratio with a minimal budget.
 
 # Add an expander
 with st.expander("**Background & Context**"):
@@ -64,6 +58,108 @@ with st.expander("**Data Dictionary**"):
          """
          )
 
+# Data Preprocessing
+# --------------------------------
+# The minumum value of Experience column is -3.0 which is a mistake because Year can not be negative. 
+# This has to be fixed
+# Handle negative values in 'Experience'
+df["Experience"] = df["Experience"].clip(lower=0) # Replace negative values in 'Experience' with NaN
+df["Experience"] = df.groupby("Age")["Experience"].transform(
+    lambda x: x.fillna(x.median())) # Impute missing values in 'Experience' based on median experience for each age group
+
+# Converting Zipcode to County
+list_zipcode=df.ZIPCode.unique()
+dict_zip={}
+for zipcode in list_zipcode:
+    city_county = zcode.matching(zipcode.astype('str'))
+    if len(city_county)==1:
+        county=city_county[0].get('county')
+    else:
+        county=zipcode
+    
+    dict_zip.update({zipcode:county})
+dict_zip.update({92717:'Orange County'})
+dict_zip.update({92634:'Orange County'})
+dict_zip.update({96651:'El Dorado County'})
+dict_zip.update({93077:'Ventura County'})
+
+# Converting the county to regions based on https://www.calbhbc.org/region-map-and-listing.html
+counties = {
+'Los Angeles County':'Los Angeles',
+'San Diego County':'Southern',
+'Santa Clara County':'Bay Area',
+'Alameda County':'Bay Area',
+'Orange County':'Southern',
+'San Francisco County':'Bay Area',
+'San Mateo County':'Bay Area',
+'Sacramento County':'Central',
+'Santa Barbara County':'Southern',
+'Yolo County':'Central',
+'Monterey County':'Bay Area',            
+'Ventura County':'Southern',             
+'San Bernardino County':'Southern',       
+'Contra Costa County':'Bay Area',        
+'Santa Cruz County':'Bay Area',           
+'Riverside County':'Southern',            
+'Kern County':'Southern',                 
+'Marin County':'Bay Area',                
+'San Luis Obispo County':'Southern',     
+'Solano County':'Bay Area',              
+'Humboldt County':'Superior',            
+'Sonoma County':'Bay Area',                
+'Fresno County':'Central',               
+'Placer County':'Central',                
+'Butte County':'Superior',               
+'Shasta County':'Superior',                
+'El Dorado County':'Central',             
+'Stanislaus County':'Central',            
+'San Benito County':'Bay Area',          
+'San Joaquin County':'Central',           
+'Mendocino County':'Superior',             
+'Tuolumne County':'Central',                
+'Siskiyou County':'Superior',              
+'Trinity County':'Superior',                
+'Merced County':'Central',                  
+'Lake County':'Superior',                 
+'Napa County':'Bay Area',                   
+'Imperial County':'Southern',
+}
+
+# Feature Extraction
+# --------------------------------
+
+# Add County to the dataset then drop Zipcode
+df['County']=df['ZIPCode'].map(dict_zip) 
+df.drop("ZIPCode", axis=1, inplace=True)
+st.dataframe(df["County"].value_counts() , width=300)
+
+df['Regions'] = df['County'].map(counties)
+st.dataframe(df["Regions"].value_counts() , width=300)
+
+# Create Agebin by binning age
+df['Agebin'] = pd.cut(df['Age'], bins = [0, 30, 40, 50, 60, 100], 
+                           labels = ['18-30', '31-40', '41-50', '51-60', '60-100'])
+st.dataframe(df["Agebin"].value_counts() , width=300)
+
+# Create Income Class by binning Income
+df["Income_Group"] = pd.cut(
+    x=df["Income"],
+    bins=[0, 50, 140, 224],
+    labels=["Lower", "Middle", "Upper"],
+)
+st.dataframe(df["Income_Group"].value_counts() , width=300)
+
+# Convert selected columns to categorical variables
+cat_columns = [
+    "Family",
+    "Education",
+    "Personal_Loan",
+    "Securities_Account",
+    "CD_Account",
+    "Online",
+    "CreditCard"
+    ]
+df[cat_columns] = df[cat_columns].astype("category")
 
 # Designing the Visuals on the App
 # --------------------------------
@@ -75,8 +171,6 @@ main_opt = st.sidebar.radio('What do you want to do: ',
                             ["Data Visualization", "Run Machine Learning Algorithms"])
 
 if(main_opt == "Data Visualization"):
-    
-    
 
     # Create layout columns
     col1, col2 = st.columns([1, 3])
@@ -87,34 +181,10 @@ if(main_opt == "Data Visualization"):
     unique_counts = df.nunique().sort_values(ascending=False)
     col1.write(unique_counts)
 
-    # Convert selected columns to categorical variables
-    cat_columns = [
-        "Family",
-        "Education",
-        "Personal_Loan",
-        "Securities_Account",
-        "CD_Account",
-        "Online",
-        "CreditCard"
-        ]
-    df[cat_columns] = df[cat_columns].astype("category")
     
     # Summary statistics
     col2.subheader("Summary Statistics", divider="red")
     col2.write(df.describe().T)
-
-    # Handle negative values in 'Experience'
-    neg_experience_count = (df["Experience"] < 0).sum()
-    col2.write(
-        f"{neg_experience_count} records have negative values for years of experience."
-        )
-    df["Experience"] = df["Experience"].clip(lower=0)
-
-    # Impute missing values in 'Experience' based on median experience for each age group
-    df["Experience"] = df.groupby("Age")["Experience"].transform(
-        lambda x: x.fillna(x.median())
-        )
-
 
     # Button that allows the user to see the entire table
     check_data = st.checkbox('Show the Dataset')
@@ -134,6 +204,8 @@ if(main_opt == "Data Visualization"):
     # Tab 1: Distribution Plot
     numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
     non_numeric_columns = df.select_dtypes(exclude=np.number).columns.tolist()
+    non_numeric_columns.remove("County")
+
     selected = sec1.radio("Select the feature you want to display", numeric_columns, horizontal= True, key= "rad1")
     fig = sns.histplot(data=df, x=selected, hue="Personal_Loan")
     sec1.pyplot()
@@ -144,24 +216,24 @@ if(main_opt == "Data Visualization"):
     fig = sns.boxplot(data=df, x=selected2, orient="h")
     sec2.pyplot()
 
-    # Tab 3: Pair Plot
-    selected3 = sec3.multiselect(
-        "Which features are you interested in?",
-        [d for d in numeric_columns if d != "Personal_Loan"],
-        ["Age", "Income", "Mortgage"],
-        key="se3"
-        )
-    # Incase the user makes a mistake by deleting the columns by mistake
-    if (len(selected3) == 0):
-        st.write("You cannot leave the field empty, Please select one or more columns!")
-    else:
-        sns.pairplot(
-        df[["Personal_Loan"] + selected3],
-        hue="Personal_Loan",
-        palette=["blue", "green"],
-        markers=["o", "s"]
-        )
-        sec3.pyplot()
+    # # Tab 3: Pair Plot
+    # selected3 = sec3.multiselect(
+    #     "Which features are you interested in?",
+    #     [d for d in numeric_columns if d != "Personal_Loan"],
+    #     ["Age", "Income", "Mortgage"],
+    #     key="se3"
+    #     )
+    # # Incase the user makes a mistake by deleting the columns by mistake
+    # if (len(selected3) == 0):
+    #     st.write("You cannot leave the field empty, Please select one or more columns!")
+    # else:
+    #     sns.pairplot(
+    #     df[["Personal_Loan"] + selected3],
+    #     hue="Personal_Loan",
+    #     palette=["blue", "green"],
+    #     markers=["o", "s"]
+    #     )
+    #     sec3.pyplot()
 
     # Tab 4: Bar Plot
     
@@ -182,22 +254,22 @@ if(main_opt == "Data Visualization"):
             )
     sec4.pyplot()
 
-    # Tab 5: Altair Plot
-    opt1, opt2, opt3 = st.columns(3)
+    # # Tab 5: Altair Plot
+    # opt1, opt2, opt3 = st.columns(3)
 
-    x_sb = opt1.selectbox('x axis: ', numeric_columns)
-    y_sb = opt2.selectbox('y axis: ', numeric_columns)
-    color = opt3.selectbox('hue: ', non_numeric_columns)
+    # x_sb = opt1.selectbox('x axis: ', numeric_columns)
+    # y_sb = opt2.selectbox('y axis: ', numeric_columns)
+    # color = opt3.selectbox('hue: ', non_numeric_columns)
 
-    chart = alt.Chart(df).mark_point().encode(
-        alt.X(x_sb, title= f'{x_sb}'),
-        alt.Y(y_sb, title=f'{y_sb}'), 
-        color=alt.Color(color)).properties(
-            width=700,
-            height=550
-            ).interactive()
+    # chart = alt.Chart(df).mark_point().encode(
+    #     alt.X(x_sb, title= f'{x_sb}'),
+    #     alt.Y(y_sb, title=f'{y_sb}'), 
+    #     color=alt.Color(color)).properties(
+    #         width=700,
+    #         height=550
+    #         ).interactive()
     
-    sec5.altair_chart(chart)
+    # sec5.altair_chart(chart)
 
     
 
@@ -209,6 +281,15 @@ if(main_opt == "Data Visualization"):
         annot=True, 
         fmt=".2f"
         )
+    st.pyplot()
+
+
+    sns.distplot( df[df['Personal_Loan'] == 0]['Income'], color = 'g')
+    sns.distplot( df[df['Personal_Loan'] == 1]['Income'], color = 'r')
+    st.pyplot()
+
+    ax = sns.stripplot(x='Family', y='Income', hue='Personal_Loan', data=df,dodge= True)
+    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     st.pyplot()
 
 else:
