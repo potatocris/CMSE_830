@@ -1,59 +1,77 @@
-import streamlit as st
+# Libraries to help with reading and manipulating data
 import pandas as pd
 import numpy as np
+
+# Libraries to help with data visualization
 import seaborn as sns
 import matplotlib.pyplot as plt
+from pandas.plotting import parallel_coordinates
+import altair as alt
+import hiplot as hip
+import streamlit as st
+
 st.set_option('deprecation.showPyplotGlobalUse', False)
 # st.set_page_config(layout="wide")
 
 # setting the layout for the seaborn plot
 sns.set(style="darkgrid")
 
-# Set Streamlit app title
-st.title("Loan Modelling Data Exploration")
-
-# Add an expander
-expand = st.expander(
-    """#### Background & Context 
-            Click to expand:"""
-)
-expand.write(
-    """AllLife Bank has a growing customer base. Majority of these customers are liability customers (depositors) with varying size of deposits. 
-         The number of customers who are also borrowers (asset customers) is quite small, and the bank is interested in expanding this base rapidly 
-         to bring in more loan business and in the process, earn more through the interest on loans. In particular, the management wants to explore ways 
-         of converting its liability customers to personal loan customers (while retaining them as depositors).
-         A campaign that the bank ran last year for liability customers showed a healthy conversion rate of over 9% success. 
-         This has encouraged the retail marketing department t o devise campaigns with better target marketing to increase the success ratio with a minimal budget."""
-)
-
-# Add an expander
-expand2 = st.expander(
-    """#### Data Dictionary 
-            Click to expand:"""
-)
-expand2.write(
-    """
-         * ID: Customer ID
-         * Age: Customer’s age in completed years
-         * Experience: #years of professional experience
-         * Income: Annual income of the customer (in thousand dollars)
-         * ZIP Code: Home Address ZIP code.
-         * Family: the Family size of the customer
-         * CCAvg: Avg. spending on credit cards per month (in thousand dollars)
-         * Education: Education Level. 1: Undergrad; 2: Graduate;3: Advanced/Professional
-         * Mortgage: Value of house mortgage if any. (in thousand dollars)
-         * Personal_Loan: Did this customer accept the personal loan offered in the last campaign?
-         * Securities_Account: Does the customer have securities account with the bank?
-         * CD_Account: Does the customer have a certificate of deposit (CD) account with the bank?
-         * Online: Do customers use internet banking facilities?
-         * CreditCard: Does the customer use a credit card issued by Universal Bank?"""
-)
+# I want help a bank identify customers likely to accept personal loan offers, 
+# and ultimately drive growth and profitability
 
 # Load the dataset
-file = r'HW4/Loan_Modelling.csv'
-df = pd.read_csv(file, index_col=0)
+file = r'Loan_Modelling.csv'
+df = pd.read_csv(file, index_col="ID")
 
-# Create layout columns
+# Set Streamlit app title
+st.title("Loan Acceptance Predictor")
+
+# AllLife Bank has a growing customer base. Majority of these customers are liability customers (depositors) with varying size of deposits. 
+# The number of customers who are also borrowers (asset customers) is quite small, and the bank is interested in expanding this base rapidly 
+# to bring in more loan business and in the process, earn more through the interest on loans. In particular, the management wants to explore ways 
+# of converting its liability customers to personal loan customers (while retaining them as depositors).
+# A campaign that the bank ran last year for liability customers showed a healthy conversion rate of over 9% success. 
+# This has encouraged the retail marketing department to devise campaigns with better target marketing to increase the success ratio with a minimal budget.
+
+# Add an expander
+expand = st.expander("**Background & Context**")
+expand.write(
+    """
+         AllLife Bank aims to grow its customer base, focusing on increasing the number of borrowers (asset customers) while retaining 
+         depositors (liability customers). Last year's campaign for liability customers had a conversion rate of over 9%, inspiring 
+         the retail marketing department to create more efficient, targeted campaigns with a minimal budget to boost this ratio further."""
+)
+
+# Add an expander
+expand2 = st.expander("**Data Dictionary**")
+expand2.write(
+    """
+         * `ID`: Unique Customer Identification Number
+         * `Age`: Customer’s age in years
+         * `Experience`: Years of professional experience
+         * `Income`: Annual income of the customer (in thousand dollars)
+         * `ZIP Code`: Home Address ZIP code.
+         * `Family`: Family size of the customer
+         * `CCAvg`: Avg. spending on credit cards per month (in thousand dollars)
+         * `Education`: Education Level. 1: Undergrad; 2: Graduate;3: Advanced/Professional
+         * `Mortgage`: Value of house mortgage if any. (in thousand dollars)
+         * `Personal_Loan`: Did this customer accept the personal loan offered in the last campaign?
+         * `Securities_Account`: Does the customer have securities account with the bank?
+         * `CD_Account`: Does the customer have a certificate of deposit (CD) account with the bank?
+         * `Online`: Do customers use internet banking facilities?
+         * `CreditCard`: Does the customer use a credit card issued by Universal Bank?"""
+)
+
+# Designing the Visuals on the App
+# --------------------------------
+
+# Partitioning the Web App to accommodate the Visualization of the Dataset and ML algorithm
+st.sidebar.write("### This Application is divided into two sections")
+
+main_opt = st.sidebar.radio('What do you want to do: ', ["Data Visualization", "Run Machine Learning Algorithms"])
+
+if(main_opt == "Data Visualization"):
+    # Create layout columns
 col1, col2 = st.columns([1, 3])
 
 # Display unique value counts for each column
@@ -156,23 +174,3 @@ for p in ax.patches:
         size=10,
     )
 sec4.pyplot()
-
-
-# Add a file uploader
-uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
-if uploaded_file is not None:
-    df_uploaded = pd.read_csv(uploaded_file)
-    st.write("uploaded_csv")
-    st.write(df_uploaded)
-
-
-# Add a progress bar
-progress = col2.progress(0)
-for i in range(100):
-    progress.progress(i + 1)
-
-# Add a success box
-if progress:
-    col2.success(
-        "Negative values replaced with median **experience** for each age group!"
-    )
