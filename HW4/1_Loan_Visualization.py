@@ -14,6 +14,8 @@ import streamlit as st
 st.set_page_config(
     page_title="Loan Marketing",
     page_icon="🏦",
+    initial_sidebar_state="collapsed",
+    menu_items= {'About': "This web application is my CMSE 830 Mid Term Project Submission. Enjoy my Hard Work!"}
 )
 st.set_option('deprecation.showPyplotGlobalUse', False)
 # st.set_page_config(layout="wide")
@@ -28,19 +30,20 @@ file = r'Loan_Modelling.csv'
 # Load the dataset
 @st.cache_data
 def load_data(file):
-    df = pd.read_csv(file, index_col="ID")
+    data = pd.read_csv(file, index_col="ID")
 
-    return df
+    return data
 
 # Load the data using the defined function
-df = load_data(file)
+data = load_data(file)
+df = data.copy()
 
 # Set Streamlit app title
 st.title(":green[Enhancing AllLife Bank's Personal Loan Marketing Strategy] 🏦")
 
 # Add an expander
 with st.expander("**Background & Context**"):
-    st.write(
+    st.markdown(
     """
     AllLife Bank aims to grow its customer base, focusing on increasing the number of borrowers (asset customers) while retaining 
     depositors (liability customers). Last year's campaign for liability customers had a conversion rate of over 9%, inspiring 
@@ -50,7 +53,7 @@ with st.expander("**Background & Context**"):
 
 
 with st.expander("**Data Dictionary**"):
-    st.write(
+    st.markdown(
     """
          * `ID`: Unique Customer Identification Number
          * `Age`: Customer’s age in years
@@ -69,7 +72,6 @@ with st.expander("**Data Dictionary**"):
          """
          )
 
-data_load_state = st.text('Loading data...')
 # Data Preprocessing
 # --------------------------------
 # The minumum value of Experience column is -3.0 which is a mistake because Year can not be negative. 
@@ -175,11 +177,18 @@ df[cat_columns] = df[cat_columns].astype("category")
 
 # Summary statistics
 # --------------------------------
-st.subheader("Summary Statistics")
-st.write(df.describe().T)
+st.subheader("Summary Statistics", divider= "green")
+st.dataframe(data.describe().T, width= 800)
+
+# Button that allows the user to see the entire table
+check_data = st.toggle('Show the Original Dataset')
+if check_data:
+    values = st.slider('Select number of rows', 0, 100, 5)
+    st.dataframe(data.head(values))
 
 # Features Creation
 # ---------------------------------
+st.subheader("Feature Creation", divider= "green")
 geo_cont = st.container()
 with geo_cont:
     # Create layout columns
@@ -187,13 +196,13 @@ with geo_cont:
 
     # Display the Counties created
     with col1:
-        with st.expander("#### Converted `Zip Codes` to `County`"):
+        with st.expander("##### Converted `Zip Codes` to `County`"):
             st.dataframe(df["County"].value_counts() , width=300)
         
 
     # Display the Regions created
     with col2:
-        with st.expander("#### Created `Regions` from `Counties`"):
+        with st.expander("##### Created `Regions` from `Counties`"):
             st.dataframe(df["Regions"].value_counts() , width=300)
 
 agebin_cont = st.container()
@@ -203,19 +212,20 @@ with agebin_cont:
 
     # Display the Agebins created
     with col3:
-        st.write("#### Created `Age Bin` from `Age`")
-        st.dataframe(df["Agebin"].value_counts() , width=300)
+        with st.expander("##### Created `Age Bin` from `Age`"):
+            st.dataframe(df["Agebin"].value_counts() , width=300)
 
     # Display the Income Group created
     with col4:
-        st.write("#### Created `Income Group` from `Income`")
-        st.dataframe(df["Income_Group"].value_counts() , width=300)
+        with st.expander("##### Created `Income Group` from `Income`"):
+            st.dataframe(df["Income_Group"].value_counts() , width=300)
 
 
 # Button that allows the user to see the entire table
-check_data = st.toggle('Show the Dataset')
+check_data = st.toggle('Show the New Dataset')
 if check_data:
-    st.dataframe(df)
+    values = st.slider('Select number of rows', 0, 100, 5)
+    st.dataframe(df.head(values))
     
 st.divider()
 
@@ -441,8 +451,3 @@ st.write("I'm ", age, 'years old')
 values = st.slider('Select a range of values', 0.0, 100.0, (25.0, 75.0))
 st.write('Values:', values)
 
-
-
-
-
-data_load_state.text('Loading data...done!')
