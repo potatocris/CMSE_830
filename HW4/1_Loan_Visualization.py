@@ -10,7 +10,7 @@ from pandas.plotting import parallel_coordinates
 import altair as alt
 import hiplot as hip
 import streamlit as st
-from streamlit_extras.add_vertical_space import add_vertical_space
+# from streamlit_extras.add_vertical_space import add_vertical_space
 
 # with col1:
 #     add_vertical_space()
@@ -343,51 +343,71 @@ with tab1:
 # Define available variables for X, Color, and Facet
 x_variables = list(df.columns)
 x_variables.remove('County')
-color_variables = list(df.columns)
-facet_variables = list(df.columns)
 
-# Interactive Distribution Chart
-# -------------------------------------------------
-st.subheader('Interactive Distribution Chart')
+# # Interactive Distribution Chart
+# # -------------------------------------------------
+# st.subheader('Interactive Distribution Chart')
 
-# Selectbox for X variable
-x_variable = st.radio('**Select Variable:**',x_variables, index=x_variables.index('Income'), horizontal= True)
+# # Selectbox for X variable
+# x_variable = st.radio('**Select Variable:**',x_variables, index=x_variables.index('Income'), horizontal= True)
 
-# Selectbox for Color variable with a default "None" option
-color_variable = st.selectbox('**Choose Color:**', ['None'] + non_numeric_columns)
+# # Selectbox for Color variable with a default "None" option
+# color_variable = st.selectbox('**Choose Color:**', ['None'] + non_numeric_columns)
 
-# Selectbox for Facet variable with a default "None" option
-facet_variable = st.selectbox('**Choose Subplot:**', ['None'] + non_numeric_columns, index=non_numeric_columns.index('Personal_Loan') + 1)
+# # Selectbox for Facet variable with a default "None" option
+# facet_variable = st.selectbox('**Choose Subplot:**', ['None'] + non_numeric_columns, index=non_numeric_columns.index('Personal_Loan') + 1)
 
-# Check if the selected x_variable is numeric
-if x_variable in numeric_columns:
-    # Create the Altair chart with binning
-    chart = alt.Chart(df).mark_bar().encode(
-        alt.X(f'{x_variable}:Q', bin=alt.Bin(maxbins=30)),
-        alt.Y('count()'),
-    )
-else:
-    # Create the Altair chart without binning
-    chart = alt.Chart(df).mark_bar().encode(
-        alt.X(f'{x_variable}'),
-        alt.Y('count()'),
-    )
+# # Check if the selected x_variable is numeric
+# if x_variable in numeric_columns:
+#     # Create the Altair chart with binning
+#     chart = alt.Chart(df).mark_bar().encode(
+#         alt.X(f'{x_variable}:Q', bin=alt.Bin(maxbins=30)),
+#         alt.Y('count()'),
+#         alt.Tooltip()
+#     )
+# else:
+#     # Create the Altair chart without binning
+#     chart = alt.Chart(df).mark_bar().encode(
+#         alt.X(f'{x_variable}'),
+#         alt.Y('count()'),
+#     )
 
-# Check if a Color variable is selected
-if color_variable != 'None':
-    chart = chart.encode(alt.Color(f'{color_variable}:N'))
-else:
-    chart = chart.encode(color=alt.value('gray'))  # Default color
+# # Check if a Color variable is selected
+# if color_variable != 'None':
+#     chart = chart.encode(alt.Color(f'{color_variable}:N'))
+# else:
+#     chart = chart.encode(color=alt.value('gray'))  # Default color
+
+# # Check if Facet variable is selected
+# if facet_variable != 'None':
+#     chart = chart.properties(width=300, height=300).facet(f'{facet_variable}:O', columns=3).resolve_scale(y='independent')
+# else:
+#     # Adjust the figure size when only a single plot is displayed (Facet is None)
+#     chart = chart.properties(width=600, height=500)  # Adjust the width and height as needed
+
+# # Display the Altair chart in the Streamlit app
+# st.altair_chart(chart)
+
+x_dropdown = st.selectbox('**Choose X Variable:**',x_variables, index=x_variables.index('Income'))
+y_dropdown = st.selectbox('**Choose Y Variable:**',x_variables, index=x_variables.index('Age'))
+color_dropdown = st.selectbox('**Choose Color:**', ['None'] + non_numeric_columns, index=non_numeric_columns.index('Personal_Loan') + 1)
+facet_dropdown = st.selectbox('**Choose Subplot:**', ['None'] + non_numeric_columns)
+
+rect_chart = alt.Chart(df).mark_point().encode(
+    alt.X(f'{x_dropdown}'),
+    alt.Y(f'{y_dropdown}'),
+    alt.Color(f'{color_dropdown}'),
+    alt.Tooltip())
 
 # Check if Facet variable is selected
-if facet_variable != 'None':
-    chart = chart.properties(width=300, height=300).facet(f'{facet_variable}:O', columns=3)
+if facet_dropdown != 'None':
+    rect_chart = rect_chart.properties(width=300, height=300).facet(f'{facet_dropdown}:O', columns=3).resolve_scale(x='independent', y='independent')
 else:
     # Adjust the figure size when only a single plot is displayed (Facet is None)
-    chart = chart.properties(width=600, height=500)  # Adjust the width and height as needed
+    rect_chart = rect_chart.properties(width=600, height=500)  # Adjust the width and height as needed
 
 # Display the Altair chart in the Streamlit app
-st.altair_chart(chart)
+st.altair_chart(rect_chart)
 
 # Interesting Findings
 #----------------------------------------
