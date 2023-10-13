@@ -172,7 +172,9 @@ cat_columns = [
     "Securities_Account",
     "CD_Account",
     "Online",
-    "CreditCard"
+    "CreditCard",
+    "County",
+    "Region"
 ]
 df[cat_columns] = df[cat_columns].astype("category")
 
@@ -255,83 +257,133 @@ with tab1:
     sns.move_legend(fig, "upper left", bbox_to_anchor=(1, 1))
     tab1.pyplot()
 
-# Tab 2: Box Plot
-with tab2:
-    rd2 = tab2.radio("Select the feature you want to display",
-                     numeric_columns, horizontal=True, key="rad2")
-    fig = sns.boxplot(data=df, x=rd2, orient="h")
-    tab2.pyplot()
+# # Tab 2: Box Plot
+# with tab2:
+#     rd2 = tab2.radio("Select the feature you want to display",
+#                      numeric_columns, horizontal=True, key="rad2")
+#     fig = sns.boxplot(data=df, x=rd2, orient="h")
+#     tab2.pyplot()
 
-# Tab 3: Pair Plot
-with tab3:
-    multi1 = tab3.multiselect(
-        "Which features are you interested in?",
-        [d for d in numeric_columns if d != "Personal_Loan"],
-        ["Age", "Income", "Mortgage"],
-        key="se3"
+# # Tab 3: Pair Plot
+# with tab3:
+#     multi1 = tab3.multiselect(
+#         "Which features are you interested in?",
+#         [d for d in numeric_columns if d != "Personal_Loan"],
+#         ["Age", "Income", "Mortgage"],
+#         key="se3"
+#     )
+#     # Incase the user makes a mistake by deleting the columns by mistake
+#     if (len(multi1) == 0):
+#         st.write(
+#             "You cannot leave the field empty, Please select one or more columns!")
+#     else:
+#         sns.pairplot(
+#             df[["Personal_Loan"] + multi1],
+#             hue="Personal_Loan",
+#             palette=["blue", "green"],
+#             markers=["o", "s"]
+#         )
+#         tab3.pyplot()
+
+# # Tab 4: Bar Plot
+# with tab4:
+#     sb1 = tab4.selectbox(
+#         "Which feature are you interested in?", non_numeric_columns, key="sel1"
+#     )
+#     fig, ax = plt.subplots()
+#     sns.countplot(data=df, x=sb1, ax=ax)
+#     total = len(df[sb1])
+#     for p in ax.patches:
+#         height = p.get_height()
+#         ax.text(
+#             p.get_x() + p.get_width() / 2.0,
+#             height + 0.5,
+#             f"{100 * height / total:.2f}%",
+#             ha="center",
+#             size=10
+#         )
+#     tab4.pyplot()
+
+# # Tab 5: Altair Plot
+# with tab5:
+#     opt1, opt2, opt3 = st.columns(3)
+
+#     x_sb = opt1.selectbox('x axis: ', numeric_columns, key="sel2")
+#     y_sb = opt2.selectbox('y axis: ', numeric_columns, key="sel3")
+#     color = opt3.selectbox('hue: ', non_numeric_columns, key="sel4")
+
+#     chart = alt.Chart(df).mark_point().encode(
+#         alt.X(x_sb, title=f'{x_sb}'),
+#         alt.Y(y_sb, title=f'{y_sb}'),
+#         color=alt.Color(color)).properties(
+#             width=700,
+#             height=550
+#     ).interactive()
+
+#     tab5.altair_chart(chart)
+
+# # Tab 6: HiPlot
+# with tab6:
+#     @st.cache
+#     def parallel_plot():
+#         hip_plot = hip.Experiment.from_dataframe(
+#             df[['CCAvg', 'CD_Account', 'Income', 'Mortgage', 'Education', 'Personal_Loan']])
+#         hip_plot._compress = True
+#         return hip_plot.to_streamlit(key="hp1")
+
+
+#     hiplot1 = parallel_plot()
+#     hiplot1.display()
+
+
+# Define available variables for X, Color, and Facet
+x_variables = list(df.columns)
+x_variables.remove('County')
+color_variables = list(df.columns)
+facet_variables = list(df.columns)
+
+# Interactive Distribution Chart
+# -------------------------------------------------
+st.subheader('Interactive Distribution Chart')
+
+# Selectbox for X variable
+x_variable = st.selectbox('**Choose Variable:**', x_variables)
+
+# Selectbox for Facet variable with a default "None" option
+facet_variable = st.selectbox('**Choose Subplot:**', ['None'] + non_numeric_columns)
+
+# Selectbox for Color variable with a default "None" option
+color_variable = st.selectbox('**Choose Color:**', ['None'] + non_numeric_columns)
+
+# Check if the selected x_variable is numeric
+if x_variable in numeric_columns:
+    # Create the Altair chart with binning
+    chart = alt.Chart(df).mark_bar().encode(
+        alt.X(f'{x_variable}:Q', bin=alt.Bin(maxbins=30)),
+        alt.Y('count()'),
     )
-    # Incase the user makes a mistake by deleting the columns by mistake
-    if (len(multi1) == 0):
-        st.write(
-            "You cannot leave the field empty, Please select one or more columns!")
-    else:
-        sns.pairplot(
-            df[["Personal_Loan"] + multi1],
-            hue="Personal_Loan",
-            palette=["blue", "green"],
-            markers=["o", "s"]
-        )
-        tab3.pyplot()
-
-# Tab 4: Bar Plot
-with tab4:
-    sb1 = tab4.selectbox(
-        "Which feature are you interested in?", non_numeric_columns, key="sel1"
+else:
+    # Create the Altair chart without binning
+    chart = alt.Chart(df).mark_bar().encode(
+        alt.X(f'{x_variable}'),
+        alt.Y('count()'),
     )
-    fig, ax = plt.subplots()
-    sns.countplot(data=df, x=sb1, ax=ax)
-    total = len(df[sb1])
-    for p in ax.patches:
-        height = p.get_height()
-        ax.text(
-            p.get_x() + p.get_width() / 2.0,
-            height + 0.5,
-            f"{100 * height / total:.2f}%",
-            ha="center",
-            size=10
-        )
-    tab4.pyplot()
 
-# Tab 5: Altair Plot
-with tab5:
-    opt1, opt2, opt3 = st.columns(3)
+# Check if a Color variable is selected
+if color_variable != 'None':
+    chart = chart.encode(alt.Color(f'{color_variable}:N'))
+else:
+    chart = chart.encode(color=alt.value('gray'))  # Default color
 
-    x_sb = opt1.selectbox('x axis: ', numeric_columns, key="sel2")
-    y_sb = opt2.selectbox('y axis: ', numeric_columns, key="sel3")
-    color = opt3.selectbox('hue: ', non_numeric_columns, key="sel4")
+# Check if Facet variable is selected
+if facet_variable != 'None':
+    chart = chart.properties(width=300, height=300).facet(f'{facet_variable}:O', columns=3)
+else:
+    # Adjust the figure size when only a single plot is displayed (Facet is None)
+    chart = chart.properties(width=600, height=500)  # Adjust the width and height as needed
 
-    chart = alt.Chart(df).mark_point().encode(
-        alt.X(x_sb, title=f'{x_sb}'),
-        alt.Y(y_sb, title=f'{y_sb}'),
-        color=alt.Color(color)).properties(
-            width=700,
-            height=550
-    ).interactive()
-
-    tab5.altair_chart(chart)
-
-# Tab 6: HiPlot
-with tab6:
-    @st.cache
-    def parallel_plot():
-        hip_plot = hip.Experiment.from_dataframe(
-            df[['CCAvg', 'CD_Account', 'Income', 'Mortgage', 'Education', 'Personal_Loan']])
-        hip_plot._compress = True
-        return hip_plot.to_streamlit(key="hp1")
-
-
-    hiplot1 = parallel_plot()
-    hiplot1.display()
+# Display the Altair chart in the Streamlit app
+st.altair_chart(chart)
 
 
 
