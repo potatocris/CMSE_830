@@ -151,7 +151,7 @@ counties = {
 df['County'] = df['ZIPCode'].map(dict_zip)
 df.drop("ZIPCode", axis=1, inplace=True)
 
-df['Regions'] = df['County'].map(counties)
+df['Region'] = df['County'].map(counties)
 
 # Create Agebin by binning age
 df['Agebin'] = pd.cut(df['Age'], bins=[0, 30, 40, 50, 60, 100],
@@ -206,8 +206,8 @@ with geo_cont:
 
     # Display the Regions created
     with col2:
-        with st.expander("##### Created `Regions` from `Counties`"):
-            st.dataframe(df["Regions"].value_counts(), width=300)
+        with st.expander("##### Created `Region` from `Counties`"):
+            st.dataframe(df["Region"].value_counts(), width=300)
 
 agebin_cont = st.container()
 with agebin_cont:
