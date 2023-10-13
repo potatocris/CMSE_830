@@ -385,9 +385,6 @@ else:
 # Display the Altair chart in the Streamlit app
 st.altair_chart(chart)
 
-
-
-
 # Plot correlation heatmap
 heat_cont = st.container()
 with heat_cont:
