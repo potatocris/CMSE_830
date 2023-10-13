@@ -10,6 +10,10 @@ from pandas.plotting import parallel_coordinates
 import altair as alt
 import hiplot as hip
 import streamlit as st
+from streamlit_extras.add_vertical_space import add_vertical_space
+
+# with col1:
+#     add_vertical_space()
 
 st.set_page_config(
     page_title="Loan Marketing",
