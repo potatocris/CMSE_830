@@ -153,12 +153,12 @@ df.drop("ZIPCode", axis=1, inplace=True)
 
 df['Region'] = df['County'].map(counties)
 
-# Create Agebin by binning age
-df['Agebin'] = pd.cut(df['Age'], bins=[0, 30, 40, 50, 60, 100],
+# Create AgeGroup by binning age
+df['AgeGroup'] = pd.cut(df['Age'], bins=[0, 30, 40, 50, 60, 100],
                       labels=['18-30', '31-40', '41-50', '51-60', '60-100'])
 
 # Create Income Class by binning Income
-df["Income_Group"] = pd.cut(
+df["IncomeGroup"] = pd.cut(
     x=df["Income"],
     bins=[0, 50, 140, 224],
     labels=["Lower", "Middle", "Upper"],
@@ -209,20 +209,20 @@ with geo_cont:
         with st.expander("##### Created `Region` from `Counties`"):
             st.dataframe(df["Region"].value_counts(), width=300)
 
-agebin_cont = st.container()
-with agebin_cont:
+agegroup_cont = st.container()
+with agegroup_cont:
     # Create more layout columns
     col3, col4 = st.columns(2)
 
-    # Display the Agebins created
+    # Display the Age Groups created
     with col3:
-        with st.expander("##### Created `Age Bin` from `Age`"):
-            st.dataframe(df["Agebin"].value_counts(), width=300)
+        with st.expander("##### Created `AgeGroup` from `Age`"):
+            st.dataframe(df["AgeGroup"].value_counts(), width=300)
 
-    # Display the Income Group created
+    # Display the Income Groups created
     with col4:
         with st.expander("##### Created `Income Group` from `Income`"):
-            st.dataframe(df["Income_Group"].value_counts(), width=300)
+            st.dataframe(df["IncomeGroup"].value_counts(), width=300)
 
 
 # Button that allows the user to see the entire table
