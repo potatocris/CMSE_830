@@ -347,13 +347,13 @@ facet_variables = list(df.columns)
 st.subheader('Interactive Distribution Chart')
 
 # Selectbox for X variable
-x_variable = st.selectbox('**Choose Variable:**', x_variables)
-
-# Selectbox for Facet variable with a default "None" option
-facet_variable = st.selectbox('**Choose Subplot:**', ['None'] + non_numeric_columns)
+x_variable = st.radio('**Select Variable:**',x_variables, index=x_variables.index('Income'), horizontal= True)
 
 # Selectbox for Color variable with a default "None" option
 color_variable = st.selectbox('**Choose Color:**', ['None'] + non_numeric_columns)
+
+# Selectbox for Facet variable with a default "None" option
+facet_variable = st.selectbox('**Choose Subplot:**', ['None'] + non_numeric_columns, index=non_numeric_columns.index('Personal_Loan') + 1)
 
 # Check if the selected x_variable is numeric
 if x_variable in numeric_columns:
@@ -384,6 +384,10 @@ else:
 
 # Display the Altair chart in the Streamlit app
 st.altair_chart(chart)
+
+# Interesting Findings
+#----------------------------------------
+st.subheader('Interesting Findings')
 
 # Plot correlation heatmap
 heat_cont = st.container()
@@ -431,91 +435,6 @@ with family_cont:
             I rolled actual dice for these, so they're *guaranteed* to
             be random.
         """)
-
-# from vega_datasets import data
-
-# # We use @st.cache_data to keep the dataset in cache
-# @st.cache_data
-# def get_data():
-#     source = data.stocks()
-#     source = source[source.date.gt("2004-01-01")]
-#     return source
-
-# source = get_data()
-
-# # Define the base time-series chart.
-# def get_chart(data):
-#     hover = alt.selection_single(
-#         fields=["date"],
-#         nearest=True,
-#         on="mouseover",
-#         empty="none",
-#     )
-
-#     lines = (
-#         alt.Chart(data, title="Evolution of stock prices")
-#         .mark_line()
-#         .encode(
-#             x="date",
-#             y="price",
-#             color="symbol",
-#         )
-#     )
-
-#     # Draw points on the line, and highlight based on selection
-#     points = lines.transform_filter(hover).mark_circle(size=65)
-
-#     # Draw a rule at the location of the selection
-#     tooltips = (
-#         alt.Chart(data)
-#         .mark_rule()
-#         .encode(
-#             x="yearmonthdate(date)",
-#             y="price",
-#             opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
-#             tooltip=[
-#                 alt.Tooltip("date", title="Date"),
-#                 alt.Tooltip("price", title="Price (USD)"),
-#             ],
-#         )
-#         .add_selection(hover)
-#     )
-#     return (lines + points + tooltips).interactive()
-
-# chart = get_chart(source)
-
-# # Add annotations
-# ANNOTATIONS = [
-#     ("Mar 01, 2008", "Pretty good day for GOOG"),
-#     ("Dec 01, 2007", "Something's going wrong for GOOG & AAPL"),
-#     ("Nov 01, 2008", "Market starts again thanks to..."),
-#     ("Dec 01, 2009", "Small crash for GOOG after..."),
-# ]
-# annotations_df = pd.DataFrame(ANNOTATIONS, columns=["date", "event"])
-# annotations_df.date = pd.to_datetime(annotations_df.date)
-# annotations_df["y"] = 10
-
-# annotation_layer = (
-#     alt.Chart(annotations_df)
-#     .mark_text(size=20, text="⬇", dx=-8, dy=-10, align="left")
-#     .encode(
-#         x="date:T",
-#         y=alt.Y("y:Q"),
-#         tooltip=["event"],
-#     )
-#     .interactive()
-# )
-
-# st.altair_chart((chart + annotation_layer).interactive(),
-# use_container_width=True)
-
-
-# map_data = pd.DataFrame(
-# np.random.randn(1000, 2) / [50, 50] + [37.76, -122.4],
-# columns=['lat', 'lon'])
-
-# st.map(map_data)
-
 
 age = st.slider('How old are you?', 0, 130, 25)
 st.write("I'm ", age, 'years old')
