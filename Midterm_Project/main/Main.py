@@ -27,14 +27,11 @@ sns.set(style="darkgrid")
 file = r"Loan_Modelling.csv"
 
 # Load the dataset
-
-
 @st.cache_data
 def load_data(file):
     data = pd.read_csv(file, index_col="ID")
 
     return data
-
 
 # Load the data using the defined function
 data = load_data(file)
@@ -56,20 +53,21 @@ with st.expander("**Background & Context**"):
 with st.expander("**Data Dictionary**"):
     st.write(
         """
-         * **`ID`**: Unique Customer Identification Number
-         * **`Age`**: Customer’s age in years
-         * **`Experience`**: Years of professional experience
-         * **`Income`**: Annual income of the customer (in thousand dollars)
-         * **`ZIP Code`**: Home Address ZIP code.
-         * **`Family`**: Family size of the customer
-         * **`CCAvg`**: Avg. spending on credit cards per month (in thousand dollars)
-         * **`Education`**: Education Level. 1: Undergrad; 2: Graduate;3: Advanced/Professional
-         * **`Mortgage`**: Value of house mortgage if any. (in thousand dollars)
-         * **`Personal_Loan`**: Did this customer accept the personal loan offered in the last campaign?
-         * **`Securities_Account`**: Does the customer have securities account with the bank?
-         * **`CD_Account`**: Does the customer have a certificate of deposit (CD) account with the bank?
-         * **`Online`**: Do customers use internet banking facilities?
-         * **`CreditCard`**: Does the customer use a credit card issued by Universal Bank?
+        * **`ID`**: Unique Customer Identification Number
+        * **`Age`**: Customer’s age in years
+        * **`Experience`**: Years of professional experience
+        * **`Income`**: Annual customer income *(in thousand dollars)*
+        * **`ZIP Code`**: Home Address ZIP code.
+        * **`Family`**: Customer's Family Size *(1\:Single, 2\:Small, 3\:Medium, 4\:Large)*
+        * **`CCAvg`**: Average monthly credit card spending *(in thousand dollars)*
+        * **`Education`**: Education Level. *(1\:Undergrad, 2\:Graduate, 3\:Professional)*
+        * **`Mortgage`**: House mortgage value if any *(in thousand dollars)*
+        * **`Securities_Account`**:  Possession of a securities account with the bank *(1\:Yes, 0\:No)*
+        * **`CD_Account`**: Possession of a certificate of deposit account with the bank *(1\:Yes, 0\:No)*
+        * **`Online`**: Usage of internet banking facilities *(1\:Yes, 0\:No)*
+        * **`CreditCard`**: Usage of a credit card issued by AllLife Bank *(1\:Yes, 0\:No)*
+        * **`Personal_Loan`**: Acceptance of a personal loan in the last campaign *(1\:Yes, 0\:No)*
+
          """
     )
 
@@ -163,6 +161,28 @@ df["IncomeGroup"] = pd.cut(
     labels=["Lower", "Middle", "Upper"],
 )
 
+# Define mappings for the conversions
+conversion_mappings = {
+    'Securities_Account': {1: 'Yes', 0: 'No'},
+    'CD_Account': {1: 'Yes', 0: 'No'},
+    'Online': {1: 'Yes', 0: 'No'},
+    'CreditCard': {1: 'Yes', 0: 'No'},
+    'Personal_Loan': {1: 'Yes', 0: 'No'},
+    'Education': {1: 'Undergrad', 2: 'Graduate', 3: 'Professional'},
+    'Family': {1: 'Single', 2: 'Small', 3: 'Medium', 4: 'Large'}
+}
+
+# Apply the mappings to the dataFrame columns
+for column, mapping in conversion_mappings.items():
+    df[column] = df[column].map(mapping)
+
+# # Display df.info in streamlit
+# import io
+# buffer = io.StringIO()
+# df.info(buf=buffer)
+# s = buffer.getvalue()
+# st.text(s)
+
 # Convert selected columns to categorical variables
 cat_columns = [
     "Family",
@@ -242,7 +262,8 @@ non_numeric_columns.remove("County")
 # Tab 1: Bar Plot
 with tab1:
     sb1 = tab1.selectbox(
-        "Which feature are you interested in?", non_numeric_columns, key="sel1"
+        "Which feature are you interested in?", non_numeric_columns, key="sel1",
+        index=non_numeric_columns.index("Personal_Loan")
     )
     fig, ax = plt.subplots()
     sns.countplot(data=df, x=sb1, ax=ax)
@@ -321,6 +342,9 @@ with col7:
         index=non_numeric_columns.index("Personal_Loan") + 1,
     )
 
+# Specify the desired order for Family
+family_order = ["Single", "Small", "Medium", "Large"]
+
 # Check if the selected x_variable is numeric
 if x_variable in numeric_columns:
     # Create the Altair chart with binning
@@ -346,7 +370,7 @@ else:
 
 # Check if a Color variable is selected
 if color_variable != "None":
-    chart = chart.encode(alt.Color(f"{color_variable}:N"))
+    chart = chart.encode(alt.Color(f"{color_variable}", sort=family_order if color_variable == "Family" else None))
 else:
     chart = chart.encode(color=alt.value("gray"))  # Default color
 
@@ -354,7 +378,7 @@ else:
 if facet_variable != "None":
     chart = (
         chart.properties(width=300, height=300)
-        .facet(f"{facet_variable}:O", columns=3)
+        .facet(f"{facet_variable}", columns=3)
         .resolve_scale(y="independent")
     )
 else:
@@ -404,7 +428,7 @@ rect_chart = (
 
 # Check if a Color variable is selected
 if color_dropdown != "None":
-    rect_chart = rect_chart.encode(alt.Color(f"{color_dropdown}"))
+    rect_chart = rect_chart.encode(alt.Color(f"{color_dropdown}", sort=family_order if color_dropdown == "Family" else None))
 else:
     rect_chart = rect_chart.encode(color=alt.value("gray"))  # Default color
 
@@ -449,8 +473,8 @@ with heat_cont:
 income_cont = st.container()
 with income_cont:
     st.write("#### Income Distribution")
-    sns.distplot(df[df["Personal_Loan"] == 0]["Income"], color="g")
-    sns.distplot(df[df["Personal_Loan"] == 1]["Income"], color="r")
+    sns.distplot(df[df["Personal_Loan"] == "No"]["Income"], color="g")
+    sns.distplot(df[df["Personal_Loan"] == "Yes"]["Income"], color="r")
     st.pyplot()
     with st.expander("See explanation"):
         st.write(
@@ -464,7 +488,7 @@ family_cont = st.container()
 with family_cont:
     st.write("#### Income/Family Stripplot")
     ax = sns.stripplot(x="Family", y="Income",
-                       hue="Personal_Loan", data=df, dodge=True)
+                       hue="Personal_Loan", data=df, dodge=True,order= family_order)
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     st.pyplot()
     with st.expander("See explanation"):
