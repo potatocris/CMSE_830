@@ -54,7 +54,7 @@ with st.expander("**Background & Context**"):
     )
 
 with st.expander("**Data Dictionary**"):
-    st.markdown(
+    st.write(
         """
          * **`ID`**: Unique Customer Identification Number
          * **`Age`**: Customer’s age in years
