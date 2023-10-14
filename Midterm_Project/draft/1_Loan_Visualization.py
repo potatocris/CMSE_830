@@ -27,11 +27,14 @@ sns.set(style="darkgrid")
 file = r"Loan_Modelling.csv"
 
 # Load the dataset
+
+
 @st.cache_data
 def load_data(file):
     data = pd.read_csv(file, index_col="ID")
 
     return data
+
 
 # Load the data using the defined function
 data = load_data(file)
@@ -181,7 +184,8 @@ df[cat_columns] = df[cat_columns].astype("category")
 # Button that allows the user to see the entire table
 check_data = st.toggle("Show the Original Dataset")
 if check_data:
-    start, end = st.slider("Select number of rows to display", 0, len(data), (0, 5))
+    start, end = st.slider(
+        "Select number of rows to display", 0, len(data), (0, 5))
     st.dataframe(data.iloc[start:end])
 
 # Features Creation
@@ -221,13 +225,15 @@ with agegroup_cont:
 # Button that allows the user to see the entire table
 check_df = st.toggle("Show the New Dataset")
 if check_df:
-    start, end = st.slider("Select number of rows to display", 0, len(df), (0, 5))
+    start, end = st.slider(
+        "Select number of rows to display", 0, len(df), (0, 5))
     st.dataframe(df.iloc[start:end])
 
 st.subheader("Have fun with data exploration!", divider="green")
 
 # Create tabs for different visualizations
-tab1, tab2, tab3, tab4 = st.tabs(["Bar Plot", "Pair Plot", "Box Plot", "Summary Statistics"])
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["Bar Plot", "Pair Plot", "Box Plot", "Summary Statistics"])
 
 numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
 non_numeric_columns = df.select_dtypes(exclude=np.number).columns.tolist()
@@ -304,7 +310,8 @@ with col5:
 
 with col6:
     # Selectbox for Color variable with a default "None" option
-    color_variable = st.selectbox("**Choose Color:**", ["None"] + non_numeric_columns)
+    color_variable = st.selectbox(
+        "**Choose Color:**", ["None"] + non_numeric_columns)
 
 with col7:
     # Selectbox for Facet variable with a default "None" option
@@ -456,7 +463,8 @@ with income_cont:
 family_cont = st.container()
 with family_cont:
     st.write("#### Income/Family Stripplot")
-    ax = sns.stripplot(x="Family", y="Income", hue="Personal_Loan", data=df, dodge=True)
+    ax = sns.stripplot(x="Family", y="Income",
+                       hue="Personal_Loan", data=df, dodge=True)
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     st.pyplot()
     with st.expander("See explanation"):
