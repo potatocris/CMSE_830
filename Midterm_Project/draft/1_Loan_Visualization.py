@@ -24,7 +24,7 @@ st.set_option("deprecation.showPyplotGlobalUse", False)
 sns.set(style="darkgrid")
 
 # I want help a bank identify customers likely to accept personal loan offers, and ultimately drive growth and profitability
-file = r"Loan_Modelling.csv"
+file = r"Midterm_Project/draft/Loan_Modelling.csv"
 
 # Load the dataset
 
