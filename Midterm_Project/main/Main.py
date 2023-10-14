@@ -400,7 +400,7 @@ rect_chart = (
         alt.Color(f"{color_dropdown}"),
         alt.Tooltip(),
     )
-)
+).interactive()
 
 # Check if a Color variable is selected
 if color_dropdown != "None":
