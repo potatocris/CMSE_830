@@ -27,11 +27,14 @@ sns.set(style="darkgrid")
 file = r"Loan_Modelling.csv"
 
 # Load the dataset
+
+
 @st.cache_data
 def load_data(file):
     data = pd.read_csv(file, index_col="ID")
 
     return data
+
 
 # Load the data using the defined function
 data = load_data(file)
@@ -163,13 +166,13 @@ df["IncomeGroup"] = pd.cut(
 
 # Define mappings for the conversions
 conversion_mappings = {
-    'Securities_Account': {1: 'Yes', 0: 'No'},
-    'CD_Account': {1: 'Yes', 0: 'No'},
-    'Online': {1: 'Yes', 0: 'No'},
-    'CreditCard': {1: 'Yes', 0: 'No'},
-    'Personal_Loan': {1: 'Yes', 0: 'No'},
-    'Education': {1: 'Undergrad', 2: 'Graduate', 3: 'Professional'},
-    'Family': {1: 'Single', 2: 'Small', 3: 'Medium', 4: 'Large'}
+    "Securities_Account": {1: "Yes", 0: "No"},
+    "CD_Account": {1: "Yes", 0: "No"},
+    "Online": {1: "Yes", 0: "No"},
+    "CreditCard": {1: "Yes", 0: "No"},
+    "Personal_Loan": {1: "Yes", 0: "No"},
+    "Education": {1: "Undergrad", 2: "Graduate", 3: "Professional"},
+    "Family": {1: "Single", 2: "Small", 3: "Medium", 4: "Large"},
 }
 
 # Apply the mappings to the dataFrame columns
@@ -204,8 +207,7 @@ df[cat_columns] = df[cat_columns].astype("category")
 # Button that allows the user to see the entire table
 check_data = st.toggle("Show the Original Dataset")
 if check_data:
-    start, end = st.slider(
-        "Select number of rows to display", 0, len(data), (0, 5))
+    start, end = st.slider("Select number of rows to display", 0, len(data), (0, 5))
     st.dataframe(data.iloc[start:end])
 
 # Features Creation
@@ -245,15 +247,15 @@ with agegroup_cont:
 # Button that allows the user to see the entire table
 check_df = st.toggle("Show the New Dataset")
 if check_df:
-    start, end = st.slider(
-        "Select number of rows to display", 0, len(df), (0, 5))
+    start, end = st.slider("Select number of rows to display", 0, len(df), (0, 5))
     st.dataframe(df.iloc[start:end])
 
 st.subheader("Have fun with data exploration!", divider="green")
 
 # Create tabs for different visualizations
 tab1, tab2, tab3, tab4 = st.tabs(
-    ["Bar Plot", "Pair Plot", "Box Plot", "Summary Statistics"])
+    ["Bar Plot", "Pair Plot", "Box Plot", "Summary Statistics"]
+)
 
 numeric_columns = df.select_dtypes(include=np.number).columns.tolist()
 non_numeric_columns = df.select_dtypes(exclude=np.number).columns.tolist()
@@ -262,22 +264,31 @@ non_numeric_columns.remove("County")
 # Tab 1: Bar Plot
 with tab1:
     sb1 = tab1.selectbox(
-        "Which feature are you interested in?", non_numeric_columns, key="sel1",
-        index=non_numeric_columns.index("Personal_Loan")
+        "Which feature are you interested in?",
+        non_numeric_columns,
+        key="sel1",
+        index=non_numeric_columns.index("Personal_Loan"),
     )
-    fig, ax = plt.subplots()
-    sns.countplot(data=df, x=sb1, ax=ax)
-    total = len(df[sb1])
-    for p in ax.patches:
-        height = p.get_height()
-        ax.text(
-            p.get_x() + p.get_width() / 2.0,
-            height + 0.5,
-            f"{100 * height / total:.2f}%",
-            ha="center",
-            size=10,
+    # Calculate the percentage count for each category
+    count_df = df[sb1].value_counts().reset_index()
+    count_df.columns = [sb1, "Count"]
+    count_df["Percentage"] = count_df["Count"] / count_df["Count"].sum() * 100
+
+    # Create an Altair chart
+    bar_chart = (
+        alt.Chart(count_df)
+        .mark_bar()
+        .encode(
+            x=alt.X("Percentage:Q", title="Percentage"),
+            y=alt.Y(f"{sb1}:O", title=sb1),
+            color=alt.value("gray"),
+            tooltip=[sb1, "Percentage"],
         )
-    tab1.pyplot()
+        .properties(width=600, height=500)
+    )
+
+    tab1.altair_chart(bar_chart)
+
 
 # Tab 2: Pair Plot
 with tab2:
@@ -293,20 +304,56 @@ with tab2:
             "You cannot leave the field empty, Please select one or more columns!"
         )
     else:
-        sns.pairplot(df[multi1], palette=["blue", "green"], markers=["o", "s"])
-        tab2.pyplot()
+        # Create an Altair Pair Plot
+        brush = alt.selection_interval(resolve="intersect")
+        scatter_matrix = (
+            alt.Chart(df)
+            .mark_circle()
+            .add_selection(brush)
+            .encode(
+                alt.X(alt.repeat("column"), type="quantitative"),
+                alt.Y(alt.repeat("row"), type="quantitative"),
+                opacity=alt.condition(brush, alt.value(0.9), alt.value(0.05)),
+            )
+            .properties(width=150, height=150)
+            .repeat(row=multi1, column=multi1)
+        )
+
+        tab2.altair_chart(scatter_matrix)
+
+
+# # Tab 3: Box Plot
+# with tab3:
+#     plt.figure(figsize=(10, 5))
+#     rd1 = tab3.radio(
+#         "Select the feature you want to display",
+#         numeric_columns,
+#         horizontal=True,
+#         key="rad1",
+#     )
+#     fig = sns.boxplot(data=df, x=rd1, orient="h")
+#     tab3.pyplot()
+
 
 # Tab 3: Box Plot
 with tab3:
-    plt.figure(figsize=(10, 5))
-    rd1 = tab3.radio(
+    rd1 = st.radio(
         "Select the feature you want to display",
         numeric_columns,
-        horizontal=True,
         key="rad1",
+        horizontal=True,
     )
-    fig = sns.boxplot(data=df, x=rd1, orient="h")
-    tab3.pyplot()
+
+    # Create an Altair box plot
+    box_plot = (
+        alt.Chart(df)
+        .mark_boxplot()
+        .encode(alt.X(f"{rd1}", title=rd1))
+        .properties(width=500, height=300)
+    )
+
+    tab3.altair_chart(box_plot)
+
 
 # Tab 4: Summary Statistivs
 with tab4:
@@ -331,8 +378,7 @@ with col5:
 
 with col6:
     # Selectbox for Color variable with a default "None" option
-    color_variable = st.selectbox(
-        "**Choose Color:**", ["None"] + non_numeric_columns)
+    color_variable = st.selectbox("**Choose Color:**", ["None"] + non_numeric_columns)
 
 with col7:
     # Selectbox for Facet variable with a default "None" option
@@ -344,7 +390,6 @@ with col7:
 
 # Specify the desired order for Family
 family_order = ["Single", "Small", "Medium", "Large"]
-
 # Check if the selected x_variable is numeric
 if x_variable in numeric_columns:
     # Create the Altair chart with binning
@@ -352,7 +397,7 @@ if x_variable in numeric_columns:
         alt.Chart(df)
         .mark_bar()
         .encode(
-            alt.X(f"{x_variable}:Q", bin=alt.Bin(maxbins=30)),
+            alt.X(f"{x_variable}", bin=alt.Bin(maxbins=30)),
             alt.Y("count()"),
             alt.Tooltip(),
         )
@@ -370,21 +415,26 @@ else:
 
 # Check if a Color variable is selected
 if color_variable != "None":
-    chart = chart.encode(alt.Color(f"{color_variable}", sort=family_order if color_variable == "Family" else None))
+    chart = chart.encode(
+        alt.Color(
+            f"{color_variable}",
+            sort=family_order if color_variable == "Family" else None,
+        )
+    )
 else:
     chart = chart.encode(color=alt.value("gray"))  # Default color
 
 # Check if Facet variable is selected
 if facet_variable != "None":
     chart = (
-        chart.properties(width=300, height=300)
+        chart.properties(width=400, height=400)
         .facet(f"{facet_variable}", columns=3)
         .resolve_scale(y="independent")
     )
 else:
     # Adjust the figure size when only a single plot is displayed (Facet is None)
     chart = chart.properties(
-        width=600, height=500
+        width=700, height=600
     )  # Adjust the width and height as needed
 
 # Display the Altair chart in the Streamlit app
@@ -398,51 +448,51 @@ st.subheader("Interactive Scatterplot")
 col8, col9, col10, col11 = st.columns(4)
 with col8:
     x_dropdown = st.selectbox(
-        "**Choose X Variable:**", x_variables, index=x_variables.index("CCAvg")
+        "**Choose X Variable:**", numeric_columns, index=numeric_columns.index("CCAvg")
     )
 with col9:
     y_dropdown = st.selectbox(
-        "**Choose Y Variable:**", x_variables, index=x_variables.index("Income")
+        "**Choose Y Variable:**", numeric_columns, index=numeric_columns.index("Income")
     )
 with col10:
-    color_dropdown = st.selectbox(
-        "**Choose Color:**",
-        ["None"] + x_variables,
-        index=x_variables.index("Personal_Loan") + 1,
-    )
+    color_dropdown = st.selectbox("**Choose Color:**", ["None"] + numeric_columns)
     with col11:
         facet_dropdown = st.selectbox(
             "**Choose Subplot:**", ["None"] + non_numeric_columns
         )
-
+brush2 = alt.selection_interval(resolve="intersect")
 rect_chart = (
     alt.Chart(df)
-    .mark_point()
+    .add_selection(brush2)
+    .mark_point(size=50)
     .encode(
-        alt.X(f"{x_dropdown}"),
+        alt.X(
+            f"{x_dropdown}",
+        ),
         alt.Y(f"{y_dropdown}"),
-        alt.Color(f"{color_dropdown}"),
-        alt.Tooltip(),
+        opacity=alt.condition(brush2, alt.value(0.9), alt.value(0.05)),
     )
-).interactive()
+)
 
 # Check if a Color variable is selected
 if color_dropdown != "None":
-    rect_chart = rect_chart.encode(alt.Color(f"{color_dropdown}", sort=family_order if color_dropdown == "Family" else None))
+    rect_chart = rect_chart.encode(
+        alt.Color(f"{color_dropdown}", scale=alt.Scale(scheme="purplebluegreen"))
+    )
 else:
     rect_chart = rect_chart.encode(color=alt.value("gray"))  # Default color
 
 # Check if Facet variable is selected
 if facet_dropdown != "None":
     rect_chart = (
-        rect_chart.properties(width=300, height=300)
+        rect_chart.properties(width=400, height=400)
         .facet(f"{facet_dropdown}:O", columns=3)
         .resolve_scale(x="independent", y="independent")
     )
 else:
     # Adjust the figure size when only a single plot is displayed (Facet is None)
     rect_chart = rect_chart.properties(
-        width=600, height=500
+        width=700, height=600
     )  # Adjust the width and height as needed
 
 # Display the Altair chart in the Streamlit app
@@ -487,8 +537,14 @@ with income_cont:
 family_cont = st.container()
 with family_cont:
     st.write("#### Income/Family Stripplot")
-    ax = sns.stripplot(x="Family", y="Income",
-                       hue="Personal_Loan", data=df, dodge=True,order= family_order)
+    ax = sns.stripplot(
+        x="Family",
+        y="Income",
+        hue="Personal_Loan",
+        data=df,
+        dodge=True,
+        order=family_order,
+    )
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     st.pyplot()
     with st.expander("See explanation"):
