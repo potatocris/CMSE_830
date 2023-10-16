@@ -20,14 +20,7 @@ st.set_page_config(
 st.set_option("deprecation.showPyplotGlobalUse", False)
 # st.set_page_config(layout="wide")
 
-# setting the layout for the seaborn plot
-sns.set(style="darkgrid")
-
-# I want help a bank identify customers likely to accept personal loan offers, and ultimately drive growth and profitability
 file = r"Loan_Modelling.csv"
-
-# Load the dataset
-
 
 @st.cache_data
 def load_data(file):
@@ -35,15 +28,11 @@ def load_data(file):
 
     return data
 
-
-# Load the data using the defined function
+# Load the data
 data = load_data(file)
 df = data.copy()
 
-# Set Streamlit app title
 st.title(":gray[Enhancing AllLife Bank's Personal Loan Marketing Strategy] 🏦")
-
-# Add an expander
 with st.expander("**Background & Context**"):
     st.markdown(
         """
@@ -200,7 +189,6 @@ cat_columns = [
 ]
 df[cat_columns] = df[cat_columns].astype("category")
 
-
 # Designing the Visuals on the App
 # -------------------------------------
 
@@ -274,6 +262,9 @@ with tab1:
     count_df.columns = [sb1, "Count"]
     count_df["Percentage"] = count_df["Count"] / count_df["Count"].sum() * 100
 
+    # Specify the desired order for Family
+    family_order = ["Single", "Small", "Medium", "Large"]
+
     # Create an Altair chart
     bar_chart = (
         alt.Chart(count_df)
@@ -281,8 +272,8 @@ with tab1:
         .encode(
             x=alt.X("Percentage:Q", title="Percentage"),
             y=alt.Y(f"{sb1}:O", title=sb1),
-            color=alt.value("gray"),
             tooltip=[sb1, "Percentage"],
+            color= alt.Color(f"{sb1}",sort=family_order if sb1 == "Family" else None,)
         )
         .properties(width=600, height=500)
     )
@@ -321,20 +312,6 @@ with tab2:
 
         tab2.altair_chart(scatter_matrix)
 
-
-# # Tab 3: Box Plot
-# with tab3:
-#     plt.figure(figsize=(10, 5))
-#     rd1 = tab3.radio(
-#         "Select the feature you want to display",
-#         numeric_columns,
-#         horizontal=True,
-#         key="rad1",
-#     )
-#     fig = sns.boxplot(data=df, x=rd1, orient="h")
-#     tab3.pyplot()
-
-
 # Tab 3: Box Plot
 with tab3:
     rd1 = st.radio(
@@ -353,7 +330,6 @@ with tab3:
     )
 
     tab3.altair_chart(box_plot)
-
 
 # Tab 4: Summary Statistivs
 with tab4:
@@ -378,18 +354,19 @@ with col5:
 
 with col6:
     # Selectbox for Color variable with a default "None" option
-    color_variable = st.selectbox("**Choose Color:**", ["None"] + non_numeric_columns)
+    color_variable = st.selectbox("**Choose Variable for Color:**", ["None"] + non_numeric_columns,
+        index=non_numeric_columns.index("Personal_Loan") + 1,)
 
 with col7:
     # Selectbox for Facet variable with a default "None" option
     facet_variable = st.selectbox(
-        "**Choose Subplot:**",
+        "**Choose Variable for Subplot:**",
         ["None"] + non_numeric_columns,
         index=non_numeric_columns.index("Personal_Loan") + 1,
     )
 
-# Specify the desired order for Family
-family_order = ["Single", "Small", "Medium", "Large"]
+click = alt.selection_multi()
+
 # Check if the selected x_variable is numeric
 if x_variable in numeric_columns:
     # Create the Altair chart with binning
@@ -400,6 +377,7 @@ if x_variable in numeric_columns:
             alt.X(f"{x_variable}", bin=alt.Bin(maxbins=30)),
             alt.Y("count()"),
             alt.Tooltip(),
+            opacity= alt.condition(click, alt.value(0.9), alt.value(0.2)),
         )
     )
 else:
@@ -410,6 +388,7 @@ else:
         .encode(
             alt.X(f"{x_variable}"),
             alt.Y("count()"),
+            opacity= alt.condition(click, alt.value(0.9), alt.value(0.2)),
         )
     )
 
@@ -427,17 +406,15 @@ else:
 # Check if Facet variable is selected
 if facet_variable != "None":
     chart = (
-        chart.properties(width=400, height=400)
+        chart.add_selection(click)
+        .properties(width=300, height=300)
         .facet(f"{facet_variable}", columns=3)
         .resolve_scale(y="independent")
     )
 else:
-    # Adjust the figure size when only a single plot is displayed (Facet is None)
     chart = chart.properties(
-        width=700, height=600
-    )  # Adjust the width and height as needed
-
-# Display the Altair chart in the Streamlit app
+        width=600, height=500
+    ) 
 st.altair_chart(chart)
 
 st.divider()
@@ -460,17 +437,15 @@ with col10:
         facet_dropdown = st.selectbox(
             "**Choose Subplot:**", ["None"] + non_numeric_columns
         )
-brush2 = alt.selection_interval(resolve="intersect")
+
 rect_chart = (
     alt.Chart(df)
-    .add_selection(brush2)
     .mark_point(size=50)
     .encode(
         alt.X(
             f"{x_dropdown}",
         ),
         alt.Y(f"{y_dropdown}"),
-        opacity=alt.condition(brush2, alt.value(0.9), alt.value(0.05)),
     )
 )
 
@@ -492,11 +467,20 @@ if facet_dropdown != "None":
 else:
     # Adjust the figure size when only a single plot is displayed (Facet is None)
     rect_chart = rect_chart.properties(
-        width=700, height=600
+        width=600, height=500
     )  # Adjust the width and height as needed
 
+box_plot2 = (
+        alt.Chart(df)
+        .mark_boxplot()
+        .encode(alt.X(f"{x_dropdown}"),
+                alt.Y(f"{facet_dropdown}:O", title= None, ),
+                color=alt.value("gray"),)                
+        .properties(width=600, height=300)
+    )
+
 # Display the Altair chart in the Streamlit app
-st.altair_chart(rect_chart)
+st.altair_chart(rect_chart & box_plot2)
 
 st.divider()
 
