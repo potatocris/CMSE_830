@@ -1,9 +1,7 @@
 # Libraries to help with reading and manipulating data
 import pandas as pd
 import numpy as np
-import zipcodes as zcode  # to get zipcodes
-
-# Libraries to help with data visualization
+import zipcodes as zcode
 import seaborn as sns
 import matplotlib.pyplot as plt
 import altair as alt
@@ -22,15 +20,17 @@ st.set_option("deprecation.showPyplotGlobalUse", False)
 
 file = r"Loan_Modelling.csv"
 
+
 @st.cache_data
 def load_data(file):
-    data = pd.read_csv(file, index_col="ID")
+    cached_data = pd.read_csv(file, index_col="ID")
 
-    return data
+    return cached_data
+
 
 # Load the data
-data = load_data(file)
-df = data.copy()
+cached_data = load_data(file)
+df = cached_data.copy()
 
 st.title(":gray[Enhancing AllLife Bank's Personal Loan Marketing Strategy] 🏦")
 with st.expander("**Background & Context**"):
@@ -195,8 +195,9 @@ df[cat_columns] = df[cat_columns].astype("category")
 # Button that allows the user to see the entire table
 check_data = st.toggle("Show the Original Dataset")
 if check_data:
-    start, end = st.slider("Select number of rows to display", 0, len(data), (0, 5))
-    st.dataframe(data.iloc[start:end])
+    start, end = st.slider(
+        "Select number of rows to display", 0, len(cached_data), (0, 5))
+    st.dataframe(cached_data.iloc[start:end])
 
 # Features Creation
 # ---------------------------------
@@ -235,7 +236,8 @@ with agegroup_cont:
 # Button that allows the user to see the entire table
 check_df = st.toggle("Show the New Dataset")
 if check_df:
-    start, end = st.slider("Select number of rows to display", 0, len(df), (0, 5))
+    start, end = st.slider(
+        "Select number of rows to display", 0, len(df), (0, 5))
     st.dataframe(df.iloc[start:end])
 
 st.subheader("Have fun with data exploration!", divider="green")
@@ -273,7 +275,8 @@ with tab1:
             x=alt.X("Percentage:Q", title="Percentage"),
             y=alt.Y(f"{sb1}:O", title=sb1),
             tooltip=[sb1, "Percentage"],
-            color= alt.Color(f"{sb1}",sort=family_order if sb1 == "Family" else None,)
+            color=alt.Color(
+                f"{sb1}", sort=family_order if sb1 == "Family" else None,)
         )
         .properties(width=600, height=500)
     )
@@ -333,7 +336,7 @@ with tab3:
 
 # Tab 4: Summary Statistivs
 with tab4:
-    st.dataframe(data.describe().T, width=800)
+    st.dataframe(cached_data.describe().T, width=800)
 
 st.divider()
 
@@ -355,7 +358,7 @@ with col5:
 with col6:
     # Selectbox for Color variable with a default "None" option
     color_variable = st.selectbox("**Choose Variable for Color:**", ["None"] + non_numeric_columns,
-        index=non_numeric_columns.index("Personal_Loan") + 1,)
+                                  index=non_numeric_columns.index("Personal_Loan") + 1,)
 
 with col7:
     # Selectbox for Facet variable with a default "None" option
@@ -377,7 +380,7 @@ if x_variable in numeric_columns:
             alt.X(f"{x_variable}", bin=alt.Bin(maxbins=30)),
             alt.Y("count()"),
             alt.Tooltip(),
-            opacity= alt.condition(click, alt.value(0.9), alt.value(0.2)),
+            opacity=alt.condition(click, alt.value(0.9), alt.value(0.2)),
         )
     )
 else:
@@ -388,7 +391,7 @@ else:
         .encode(
             alt.X(f"{x_variable}"),
             alt.Y("count()"),
-            opacity= alt.condition(click, alt.value(0.9), alt.value(0.2)),
+            opacity=alt.condition(click, alt.value(0.9), alt.value(0.2)),
         )
     )
 
@@ -414,7 +417,7 @@ if facet_variable != "None":
 else:
     chart = chart.properties(
         width=600, height=500
-    ) 
+    )
 st.altair_chart(chart)
 
 st.divider()
@@ -432,7 +435,8 @@ with col9:
         "**Choose Y Variable:**", numeric_columns, index=numeric_columns.index("Income")
     )
 with col10:
-    color_dropdown = st.selectbox("**Choose Color:**", ["None"] + numeric_columns)
+    color_dropdown = st.selectbox(
+        "**Choose Color:**", ["None"] + numeric_columns)
     with col11:
         facet_dropdown = st.selectbox(
             "**Choose Subplot:**", ["None"] + non_numeric_columns
@@ -452,7 +456,8 @@ rect_chart = (
 # Check if a Color variable is selected
 if color_dropdown != "None":
     rect_chart = rect_chart.encode(
-        alt.Color(f"{color_dropdown}", scale=alt.Scale(scheme="purplebluegreen"))
+        alt.Color(f"{color_dropdown}", scale=alt.Scale(
+            scheme="purplebluegreen"))
     )
 else:
     rect_chart = rect_chart.encode(color=alt.value("gray"))  # Default color
@@ -471,13 +476,13 @@ else:
     )  # Adjust the width and height as needed
 
 box_plot2 = (
-        alt.Chart(df)
-        .mark_boxplot()
-        .encode(alt.X(f"{x_dropdown}"),
-                alt.Y(f"{facet_dropdown}:O", title= None, ),
-                color=alt.value("gray"),)                
-        .properties(width=600, height=300)
-    )
+    alt.Chart(df)
+    .mark_boxplot()
+    .encode(alt.X(f"{x_dropdown}"),
+            alt.Y(f"{facet_dropdown}:O", title=None, ),
+            color=alt.value("gray"),)
+    .properties(width=600, height=300)
+)
 
 # Display the Altair chart in the Streamlit app
 st.altair_chart(rect_chart & box_plot2)
